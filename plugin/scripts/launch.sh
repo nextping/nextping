@@ -107,11 +107,13 @@ current() {
 # OS and ARCH come from the fixed lists above, so this eval only ever reads NEXTPING_SHA256_<os>_<arch>.
 expected_sum() { eval "printf '%s' \"\${NEXTPING_SHA256_${OS}_${ARCH}:-}\""; }
 
+# Read from stdin: given a file name with a backslash (any Windows path), sha256sum and shasum
+# escape it and start the line with "\", which then never matches the pinned sum.
 sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | cut -d ' ' -f 1
+    sha256sum < "$1" | cut -d ' ' -f 1
   elif command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | cut -d ' ' -f 1
+    shasum -a 256 < "$1" | cut -d ' ' -f 1
   else
     return 1
   fi
