@@ -1,0 +1,22 @@
+NextPing licence
+
+Copyright (c) 2026 [to be filled at H-15: the operator's legal name]
+All rights reserved.
+
+This repository holds the NextPing Claude Code plugin and, in its GitHub Releases, the `nextping`
+program for macOS, Linux and Windows (the "binaries"), with their install scripts.
+
+You may install and use the binaries and the plugin free of charge, under the terms of use at
+https://nextping.dev/terms/. Downloading them from this repository, from npm or through
+nextping.dev, and installing them, is part of that use.
+
+You may not redistribute, sell, sublicense or modify the binaries, or publish copies of them.
+
+The source code is not published, and no licence to it is granted.
+
+The binaries include open-source components under their own licences, listed in
+THIRD_PARTY_NOTICES.txt in each release. Nothing in this licence limits your rights under those
+licences.
+
+THE BINARIES AND THE PLUGIN ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, TO THE EXTENT THE
+LAW ALLOWS. See the terms of use for the rest.

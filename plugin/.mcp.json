@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "nextping": {
+      "command": "sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/launch.sh", "mcp"],
+      "timeout": 90000000
+    }
+  }
+}

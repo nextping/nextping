@@ -1,0 +1,8 @@
+{
+  "name": "nextping",
+  "displayName": "NextPing",
+  "version": "0.1.0",
+  "description": "Your coding agent on your phone: alerts, questions with defaults, HTML reports, remote approvals, nudges and token-free watchers, end-to-end encrypted.",
+  "author": { "name": "NextPing" },
+  "keywords": ["notifications", "mobile", "approvals", "monitoring", "mcp"]
+}

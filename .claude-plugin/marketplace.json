@@ -1,0 +1,12 @@
+{
+  "name": "nextping",
+  "description": "NextPing: your coding agent, on your phone.",
+  "owner": { "name": "NextPing" },
+  "plugins": [
+    {
+      "name": "nextping",
+      "source": "./plugin",
+      "description": "Phone notifications, questions, reports and remote approvals for Claude Code."
+    }
+  ]
+}

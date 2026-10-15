@@ -1,0 +1,122 @@
+---
+name: nextping
+description: How to use NextPing, which connects this coding session to the user's phone (push alerts, questions, reports, remote approvals, watchers). Use it whenever the user would want to hear from you while away from the terminal or you need their decision - "tell me when it's done", "let me know", "ping me", "notify me", "ask me before you", "check with me", "watch the logs", "keep an eye on", "wake me up if", "send me a summary", "I'm stepping away", "I'll be on my phone", "deploy and monitor" - and when a long task finishes, a failure blocks you, you start a long-running job, or a message tagged [NextPing] from the user's phone appears in your context (pause, status, wrap up, stop, free text, late answers, report replies, watch alerts). Also use it when a NextPing tool says the machine is not paired, or the user asks to pair or connect their phone ("pair my phone", "set up NextPing"). Covers the notify, ask, report, check_inbox, set_session_title, watch_start, watch_stop, watch_list and pair_phone tools, picking a severity, ask defaults and timeouts, the report HTML component kit, and pairing.
+---
+
+# NextPing: this session, on the user's phone
+
+NextPing sends what matters from this session to the user's phone, end to end encrypted, and brings
+their answers back. Each session is a thread on the phone (default title `repo · branch · Claude`).
+The tools are on the `nextping` MCP server: `notify`, `ask`, `report`, `check_inbox`,
+`set_session_title`, `watch_start`, `watch_stop`, `watch_list`, `pair_phone`.
+
+## When to reach for it
+
+- The user said they will be away, or asked to be told, asked, or woken.
+- A long task finished or failed, or you hit something only the user can unblock.
+- You are about to do something with a real blast radius (deploy, migration, deleting data,
+  force-push) and the user is not watching: `ask` first.
+- After deploys and migrations, offer a `watch_start` instead of polling with your own tokens.
+
+Do not narrate routine steps. One good message beats ten small ones.
+
+## notify: pick the severity by what the user should feel
+
+| Severity | Use for | Phone behaviour |
+|---|---|---|
+| `info` | FYI, nothing to do | quiet entry in the thread |
+| `notable` (default) | done, milestone, result worth seeing | normal push |
+| `action_needed` | the user has to do something | push with actions |
+| `critical` | production down, data loss, security incident, or something the user explicitly asked to be woken for | one alarm of at most a minute, even at night |
+
+Never use `critical` for "tests failed" or "build broke" on a branch.
+If the user asked you to wake them for something ("wake me if the migration fails"), that event is critical.
+
+Title: one line, the outcome first ("Deploy to staging finished: 2 warnings"). Body: the details
+they need to decide.
+
+## ask: decisions with a safe default
+
+- 2–5 options with short stable ids (`yes`, `rollback`, `skip`), labels the user can tap.
+- `default_option` is what you will do if nobody answers. Choose the safe or reversible one.
+- `timeout_sec` defaults to 30 minutes (max 24 h). Only set `on_timeout: "wait"` when the user
+  told you to wait for them (or asked you to pause).
+- If the result says ASSUMED, nobody answered: say so in your summary ("I went with the default,
+  rollback, because nobody answered within 30 minutes"). A late answer arrives later as a
+  `[NextPing]` message; if it differs, correct course.
+- In Claude Code a long `ask` moves to the background; keep working on what does not depend on it.
+
+## report: the end-of-task summary
+
+Send one when substantial work is done, or periodically on long runs. Self-contained HTML, read on a
+phone: lead with the outcome, then what changed, tests, risks, next steps. NextPing embeds its CSS
+kit; use its classes (`t-card`, `t-badge t-ok|t-warn|t-bad`, `t-kv`, `t-stats`, `t-table`,
+`t-progress`, `t-list`, `t-diff`, `t-actions` + `t-btn`). Buttons can answer back with
+`onclick="agent.reply({choice: 'merge'})"`; the reply arrives as a `[NextPing]` message. HTML up
+to about 600 KB, kit included (less if mostly non-ASCII text): over that the tool refuses it with
+its size. Keep reports phone-sized; link to large artifacts instead of embedding them. Leave `allow_network` off unless the report needs remote images or
+scripts (it could leak content). Components and a full example: [report kit](references/report-kit.md).
+
+## watch_start: token-free monitoring
+
+The NextPing background service runs a command on an interval and matches its output, with no model
+calls. Prefer it to `sleep` loops. Examples:
+
+- After a deploy: `name: "prod health"`,
+  `shell: "curl -s -o /dev/null -w '%{http_code}' https://app/health"`,
+  `interval_sec: 60`, `match: {regex: "^5"}`, `until_sec: 3600`, `action: "both"`.
+- Error rate: `match: {threshold: {extract: "errors=(\\d+)", op: ">", value: 10}}`.
+- A job that must keep succeeding: `match: {exit_code: {op: "!=", value: 0}}`.
+- Overnight: add `deadman_timeout_sec` so silence (laptop asleep, network down) also alerts.
+
+`action: "wake_agent"` puts the match in your inbox; `alert` pushes to the phone; `both` does both.
+A firing watch alerts at `critical` unless you set `severity`; lower it for anything that is not an
+incident.
+Stop watchers you no longer need with `watch_stop`; `watch_list` shows their state (`error`: runs
+fail, or the dead-man alert is not armed, e.g. dropped as stale after 7.5 days and re-arming).
+
+Commands run inside the background service, not your shell: a login service has a minimal
+environment, and a service an agent started keeps that agent's environment minus its session
+variables. Use absolute paths, set what the command needs inline, and never leave an empty argv
+item (it is refused). Regexes are JavaScript with only the `m` flag; one run lasts at most 1 h.
+
+## Messages from the phone
+
+In Claude Code they appear by themselves after a tool call, as a block starting with
+`[NextPing] Messages from the user's phone`. Other agents call `check_inbox` (also do this when you
+are about to wait or end a long turn). Act on them:
+
+- **Message from the user**: treat it like a prompt typed at the terminal.
+- **PAUSE**: finish the current step, then `ask` "Paused. Resume?" (options resume/stop,
+  `on_timeout: "wait"`) and do nothing until it returns.
+- **STATUS**: send a short `notify` (severity `info`): doing what, how far, what blocks you.
+- **WRAP UP**: finish the current change, start nothing new, send a `report`, end your turn.
+- **STOP**: stop at once; run no more tools; end with one line on where you left off. NextPing may
+  also have interrupted the process.
+- **Late answer / report reply / watch fired**: re-check the decision, handle the reply, triage
+  the alert.
+
+## Session title
+
+Call `set_session_title` once you know the task ("Fix checkout VAT rounding"), so the user can
+tell threads apart.
+
+## When NextPing is not available
+
+If a tool says the machine is not paired, call `pair_phone` once: it opens a pairing page in the
+user's browser. Tell them to scan it with the NextPing app (Add computer), then carry on without
+NextPing until they say they have paired. Call `pair_phone` also when the user asks to pair or connect
+their phone. Do not retry other NextPing tools in a loop, and do not tell the user to run
+`nextping` in your Bash tool: under the Claude Code plugin it is not on PATH. If the not-paired
+message shows a `! "…" pair --open` line, the user can type that instead. If the background service
+is not running, say so once.
+
+## Outside Claude Code (CLI)
+
+Inside Claude Code, use the MCP tools above. The same features exist as a CLI for other agents'
+shells where `nextping` is on PATH (Codex or Cursor after `nextping setup`), and for
+scripts: `nextping notify "<title>" --severity notable`,
+`nextping ask "<question>" --option y=Yes --option n=No --default n` (prints the id; exit 3
+means the default was taken), `nextping report --title T --file r.html`,
+`nextping inbox`, `nextping pair --open`, `nextping watch start …`. Run
+`nextping help` for the rest.
