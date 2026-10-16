@@ -1,24 +1,45 @@
 ---
 name: nextping
-description: How to use NextPing, which connects this coding session to the user's phone (push alerts, questions, reports, remote approvals, watchers). Use it whenever the user would want to hear from you while away from the terminal or you need their decision - "tell me when it's done", "let me know", "ping me", "notify me", "ask me before you", "check with me", "watch the logs", "keep an eye on", "wake me up if", "send me a summary", "I'm stepping away", "I'll be on my phone", "deploy and monitor" - and when a long task finishes, a failure blocks you, you start a long-running job, or a message tagged [NextPing] from the user's phone appears in your context (pause, status, wrap up, stop, free text, late answers, report replies, watch alerts). Also use it when a NextPing tool says the machine is not paired, or the user asks to pair or connect their phone ("pair my phone", "set up NextPing"). Covers the notify, ask, report, check_inbox, set_session_title, watch_start, watch_stop, watch_list and pair_phone tools, picking a severity, ask defaults and timeouts, the report HTML component kit, and pairing.
+description: How to use NextPing, which connects this coding session to the user's phone (push alerts, questions, reports, remote approvals, watchers). NextPing stays off until the user asks for it. Use this skill when the user asks for phone notifications, questions or approvals, asks to be told, asked or woken about something, or says they are stepping away - "tell me when it's done", "ping me", "notify me", "ask me before you", "check with me", "watch the logs and ping me", "keep an eye on it while I'm away", "wake me up if", "send me a summary", "I'm stepping away", "I'll be on my phone" - and when a message tagged [NextPing] from the user's phone appears in your context (pause, status, wrap up, stop, free text, late answers, report replies, watch alerts, update level changes). Also use it when a NextPing tool says the machine is not paired, or the user asks to pair or connect their phone ("pair my phone", "set up NextPing"). Covers the start, notify, ask, report, check_inbox, set_session_title, watch_start, watch_stop, watch_list and pair_phone tools, update levels (every update or only important), picking a severity, ask defaults and timeouts, the report HTML component kit, and pairing.
 ---
 
 # NextPing: this session, on the user's phone
 
 NextPing sends what matters from this session to the user's phone, end to end encrypted, and brings
-their answers back. Each session is a thread on the phone (default title `repo · branch · Claude`).
-The tools are on the `nextping` MCP server: `notify`, `ask`, `report`, `check_inbox`,
-`set_session_title`, `watch_start`, `watch_stop`, `watch_list`, `pair_phone`.
+their answers back. It stays off until the user wants it: a session that never started NextPing
+never appears on the phone, and its permission prompts stay at the terminal. Once started, the
+session is a thread on the phone (default title `repo · branch · Claude`). The tools are on the
+`nextping` MCP server: `start`, `notify`, `ask`, `report`, `check_inbox`, `set_session_title`,
+`watch_start`, `watch_stop`, `watch_list`, `pair_phone`.
 
 ## When to reach for it
 
-- The user said they will be away, or asked to be told, asked, or woken.
-- A long task finished or failed, or you hit something only the user can unblock.
+Work normally and do not use NextPing unless the user asks for phone notifications, questions or approvals, asks to be told, asked or woken about something, or says they are stepping away. Then call start (or the tool you need) and follow the level the result gives.
+
+Once NextPing has started in this session:
+
+- A long task finished or failed, or you hit something only the user can unblock: tell them.
 - You are about to do something with a real blast radius (deploy, migration, deleting data,
   force-push) and the user is not watching: `ask` first.
 - After deploys and migrations, offer a `watch_start` instead of polling with your own tokens.
 
 Do not narrate routine steps. One good message beats ten small ones.
+
+## Levels: what reaches the phone
+
+When NextPing starts, the phone asks the user how much of this session they want. Their app's
+default applies until they answer, and they can change it later from the session's menu. The start
+result tells you the level, and a `[NextPing]` message tells you when the user chooses or changes it.
+
+| Level | Pushes to the phone |
+|---|---|
+| every update | everything but `info` notifications and session bookkeeping |
+| only important | `ask`, permission requests, `notify` with `action_needed` or `critical`, the report sent with `final: true`, and a notable `notify` sent with `important: true` |
+
+Under "only important", keep sending what you would send under "every update": NextPing decides
+what pushes, and the quiet entries are still the session's record on the phone. Set
+`important: true` only on the rare `notable` the user must not miss, and `final: true` on the
+end-of-task report.
 
 ## notify: pick the severity by what the user should feel
 
@@ -48,14 +69,16 @@ they need to decide.
 
 ## report: the end-of-task summary
 
-Send one when substantial work is done, or periodically on long runs. Self-contained HTML, read on a
-phone: lead with the outcome, then what changed, tests, risks, next steps. NextPing embeds its CSS
-kit; use its classes (`t-card`, `t-badge t-ok|t-warn|t-bad`, `t-kv`, `t-stats`, `t-table`,
-`t-progress`, `t-list`, `t-diff`, `t-actions` + `t-btn`). Buttons can answer back with
-`onclick="agent.reply({choice: 'merge'})"`; the reply arrives as a `[NextPing]` message. HTML up
-to about 600 KB, kit included (less if mostly non-ASCII text): over that the tool refuses it with
-its size. Keep reports phone-sized; link to large artifacts instead of embedding them. Leave `allow_network` off unless the report needs remote images or
-scripts (it could leak content). Components and a full example: [report kit](references/report-kit.md).
+Send one when substantial work is done, or periodically on long runs. Set `final: true` on the
+end-of-task report. Self-contained HTML, read on a phone: lead with the outcome, then what changed,
+tests, risks, next steps. NextPing embeds its CSS kit; use its classes (`t-card`,
+`t-badge t-ok|t-warn|t-bad`, `t-kv`, `t-stats`, `t-table`, `t-progress`, `t-list`, `t-diff`,
+`t-actions` + `t-btn`). Buttons can answer back with `onclick="agent.reply({choice: 'merge'})"`;
+the reply arrives as a `[NextPing]` message. HTML up to about 600 KB, kit included (less if mostly
+non-ASCII text): over that the tool refuses it with its size. Keep reports phone-sized; link to
+large artifacts instead of embedding them. Leave `allow_network` off unless the report needs remote
+images or scripts (it could leak content). Components and a full example:
+[report kit](references/report-kit.md).
 
 ## watch_start: token-free monitoring
 
@@ -93,13 +116,16 @@ are about to wait or end a long turn). Act on them:
 - **WRAP UP**: finish the current change, start nothing new, send a `report`, end your turn.
 - **STOP**: stop at once; run no more tools; end with one line on where you left off. NextPing may
   also have interrupted the process.
+- **Update level**: the user chose how much of this session reaches them; keep working as the
+  Levels section says.
 - **Late answer / report reply / watch fired**: re-check the decision, handle the reply, triage
   the alert.
 
 ## Session title
 
-Call `set_session_title` once you know the task ("Fix checkout VAT rounding"), so the user can
-tell threads apart.
+Once NextPing has started, call `set_session_title` when you know the task ("Fix checkout VAT
+rounding"), so the user can tell threads apart. Renaming starts NextPing, so do not rename a session
+the user never asked to see on their phone.
 
 ## When NextPing is not available
 
@@ -115,7 +141,7 @@ is not running, say so once.
 
 Inside Claude Code, use the MCP tools above. The same features exist as a CLI for other agents'
 shells where `nextping` is on PATH (Codex or Cursor after `nextping setup`), and for
-scripts: `nextping notify "<title>" --severity notable`,
+scripts: `nextping start`, `nextping notify "<title>" --severity notable`,
 `nextping ask "<question>" --option y=Yes --option n=No --default n` (prints the id; exit 3
 means the default was taken), `nextping report --title T --file r.html`,
 `nextping inbox`, `nextping pair --open`, `nextping watch start …`. Run
