@@ -94,9 +94,10 @@ design: `markdown`, `code`, `diff`, `log`, `table`, `chart`, `stats`, `progress`
 `timeline`, `callout`, `links`, `image`, `html` (the escape hatch) and `actions` (reply buttons).
 Prefer them to text dumps and to HTML. Choose a `tone` (`ok`, `warn`, `bad`, `info`, `neutral`),
 never colours. The plain title and body still matter: the lock screen shows them, and a body is
-written from the blocks when you leave it out. An error names the block and the field
-(`blocks[2] (table): rows has 260 items; the limit is 200`): fix it and send again. Fields,
-limits and examples: [blocks](references/blocks.md).
+written from the blocks when you leave it out. The `blocks` argument lists every block's fields.
+An error names the block and the field (`blocks[2] (table): rows has 260 items; the limit is 200`),
+and the block's shape when a field is missing or unknown: fix it and send again. Limits and
+examples: [blocks](references/blocks.md).
 
 When one fits, use a template instead: `test_results`, `deploy`, `pr_ready`, `incident` or
 `build_progress`, given as `template` and `data` ([templates](references/templates.md)).
