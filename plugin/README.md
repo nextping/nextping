@@ -22,8 +22,8 @@ Windows needs Git for Windows: Claude Code runs the plugin's hooks with its `sh`
 
 - **MCP tools:** `start` (turns NextPing on for the session; it stays off until you ask Claude for
   it), `notify`, `ask` (with a default and a timeout; long questions keep running in the
-  background), `report`, `set_session_title`, `check_inbox`, `watch_start`, `watch_stop`,
-  `watch_list`, `pair_phone`.
+  background), `report`, `set_status` (a quiet status pinned at the top of the session),
+  `set_session_title`, `check_inbox`, `watch_start`, `watch_stop`, `watch_list`, `pair_phone`.
 - **Hooks:** in a session where NextPing is on, permission prompts go to your phone when you are
   away from the keyboard (the local dialog stays open, and whichever answers first wins; nothing is
   ever approved on its own); messages from your phone reach Claude after its next tool call;
