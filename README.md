@@ -48,7 +48,7 @@ pairing page. In the app: sign in (Apple or Google on iPhone, Google on Android)
 computer**, scan the code. A test notification confirms it.
 
 Claude then has these tools: `start`, `notify`, `ask`, `report`, `set_status`,
-`set_session_title`, `check_inbox`, `watch_start`, `watch_stop`, `watch_list` and `pair_phone`. NextPing stays off in a
+`set_session_title`, `check_inbox`, `watch_start`, `watch_stop`, `watch_list`, `guide` and `pair_phone`. NextPing stays off in a
 session until you ask Claude for it ("tell me when it's done", "I'm stepping away"); from then on
 the session is on your phone, which asks how much of it you want (every update, or only important
 ones), and the plugin's hooks send its permission prompts to your phone and your nudges to Claude
